@@ -1,8 +1,8 @@
 const express = require("express");
+require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
 const app = express();
-const PORT = 3000;
-const client = new MongoClient("mongodb://localhost:27017/", {
+const client = new MongoClient(process.env.MONGODB_URL, {
     useUnifiedTopology : true
 });
 
@@ -54,4 +54,4 @@ app.post("/collections/:collectionName", (req, res) => {
 
 const handleConnectionErr = err => console.log(err);
 
-app.listen(PORT, () => console.log(`Listening at http://localhost:${PORT}`));
+app.listen(process.env.PORT, () => console.log(`Listening at http://localhost:${process.env.PORT}`));
