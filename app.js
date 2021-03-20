@@ -2,9 +2,30 @@ const express = require("express");
 require("dotenv").config();
 const MongoClient = require("mongodb").MongoClient;
 const app = express();
+const passport = require("passport");
+const BasicStrategy = require("passport-http").BasicStrategy;
 const client = new MongoClient(process.env.MONGODB_URL, {
     useUnifiedTopology : true
 });
+
+passport.use(new BasicStrategy(
+    function (username, password, done) {
+        client.connect()
+            .then(client => {
+                client.db("school")
+                    .collection("users", (err, collection) => {
+                        collection.findOne({ username: username })
+                            .then(user => {
+                                if (user.password === password){
+                                    done(null, user);
+                                }else{
+                                    done(null, false);
+                                }
+                            }).catch(() => done(null, false));
+                    });
+            });
+    }
+));
 
 app.get("/", (req, res) => res.send("Hello world"));
 
@@ -40,25 +61,27 @@ app.get("/collections/:collectionName", (req, res) => {
 });
 
 app.use(express.json());
-app.post("/collections/:collectionName", (req, res) => {
-    const client = new MongoClient(process.env.MONGODB_URL, {
-        useUnifiedTopology : true
-    });
-    
-    client.connect()
-        .then(client => {
-            const { collectionName } = req.params;
-
-            client.db("school")
-                .collection(collectionName, (err, c) => {
-                    
-                    c.insertOne(req.body)
-                            .then(r => res.json(r.insertedCount))
-                            .finally(() => client.close());
-                    
-                });
+app.post("/collections/:collectionName", 
+    passport.authenticate('basic', { session: false }),
+    (req, res) => {
+        const client = new MongoClient(process.env.MONGODB_URL, {
+            useUnifiedTopology : true
         });
-});
+        
+        client.connect()
+            .then(client => {
+                const { collectionName } = req.params;
+
+                client.db("school")
+                    .collection(collectionName, (err, c) => {
+                        
+                        c.insertOne(req.body)
+                                .then(r => res.json(r.insertedCount))
+                                .finally(() => client.close());
+                        
+                    });
+            });
+    });
 
 app.delete("/collections/:collectionName/:studentName", (req, res) => {
     const client = new MongoClient(process.env.MONGODB_URL, {
