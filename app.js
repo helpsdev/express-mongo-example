@@ -1,5 +1,6 @@
 const express = require("express");
 require("dotenv").config();
+const basicAuth = require("express-basic-auth");
 const MongoClient = require("mongodb").MongoClient;
 const app = express();
 const client = new MongoClient(process.env.MONGODB_URL, {
@@ -19,8 +20,12 @@ app.get("/collections", (req,res) => {
         })
         .catch(handleConnectionErr);
 });
-
-app.get("/collections/:collectionName", (req, res) => {
+//Adds basicAuth to a specific route
+app.get("/collections/:collectionName", basicAuth({
+    users:{
+        "admin":"supersecret"
+    }
+}), (req, res) => {
     const client = new MongoClient(process.env.MONGODB_URL, {
         useUnifiedTopology : true
     });
@@ -40,6 +45,14 @@ app.get("/collections/:collectionName", (req, res) => {
 });
 
 app.use(express.json());
+//Adds basicAuth to all subsequent routes
+app.use(basicAuth({
+    users:{
+        "admin":"supersecret"
+    },
+    challenge: true
+}))
+
 app.post("/collections/:collectionName", (req, res) => {
     const client = new MongoClient(process.env.MONGODB_URL, {
         useUnifiedTopology : true

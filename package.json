@@ -3,11 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node app.js"
+    "start": "node app.js",
+    "dev": "nodemon --legacy-watch app.js"
   },
   "dependencies": {
     "dotenv": "^8.2.0",
     "express": "~4.16.1",
+    "express-basic-auth": "^1.2.0",
     "mongodb": "^3.6.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.7"
   }
 }
