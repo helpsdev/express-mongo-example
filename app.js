@@ -7,27 +7,65 @@ const BasicStrategy = require("passport-http").BasicStrategy;
 const client = new MongoClient(process.env.MONGODB_URL, {
     useUnifiedTopology : true
 });
+const session = require('express-session');
 
 passport.use(new BasicStrategy(
     function (username, password, done) {
-        client.connect()
-            .then(client => {
-                client.db("school")
-                    .collection("users", (err, collection) => {
-                        collection.findOne({ username: username })
-                            .then(user => {
-                                if (user.password === password){
-                                    done(null, user);
-                                }else{
-                                    done(null, false);
-                                }
-                            }).catch(() => done(null, false));
-                    });
-            });
+        // client.connect()
+        //     .then(client => {
+        //         client.db("school")
+        //             .collection("users", (err, collection) => {
+        //                 collection.findOne({ username: username })
+        //                     .then(user => {
+        //                         if (user.password === password){
+        //                             done(null, user);
+        //                         }else{
+        //                             done(null, false);
+        //                         }
+        //                     }).catch(() => done(null, false));
+        //             });
+        //     });
+        if (username === "edwin" && password === "12345") {
+            done(null, {id:"1", name:"edwin", test:"test1",test32:"teset"});
+        }else{
+            done(null, false);
+        }
     }
 ));
+passport.serializeUser(function(user, done) {
+    done(null, user.id);
+  });
+  
+  passport.deserializeUser(function(id, done) {
+    done(null,  {id:"1", name:"edwin", test:"test1",test32:"teset"});
+  });
 
-app.get("/", (req, res) => res.send("Hello world"));
+app.get("/login", (req, res) => res.send("Send credentials"));
+
+app.post("/login", [
+    session({
+        secret: 'keyboard cat'
+    }),
+    passport.initialize(),
+    passport.session(),
+    passport.authenticate('basic', { 
+        successRedirect: '/',
+        failureRedirect: '/login' 
+    })
+], )
+
+app.get("/", [
+    session({
+        secret: 'keyboard cat'
+    }),
+    (req, res, next) => {
+        console.log(req.session);
+        next();
+    },
+    passport.initialize(),
+    passport.session(),
+    passport.authenticate('basic')
+], (req, res) => res.send("Hello world"));
 
 app.get("/collections", (req,res) => {
     
@@ -128,4 +166,4 @@ app.put('/collections/:collectionName/:studentName', (req, res) => {
 
 const handleConnectionErr = err => console.log(err);
 
-app.listen(process.env.PORT, () => console.log(`Listening at http://localhost:${process.env.PORT}`));
+app.listen(process.env.PORT || 3000, () => console.log(`Listening at http://localhost:${process.env.PORT}`));
