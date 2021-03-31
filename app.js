@@ -31,6 +31,14 @@ passport.use(new BasicStrategy(
         // }
     }
 ));
+
+passport.use("applicants_basic", new BasicStrategy((username, password, done) => {
+    if(username === "Edwin" && password === "123"){
+        done(null, {username, isAdmin:true, _id: 1});
+    }else{
+        done(null, false);
+    }
+}))
 passport.serializeUser(function(user, done) {
     done(null, user._id);
   });
@@ -46,53 +54,47 @@ passport.serializeUser(function(user, done) {
             })
         });
   });
-//not work
-app.get("/logout", session({
-    secret: 'keyboard cat',
-    resave: false,
-    saveUninitialized: true
-}), (req, res) => {
-    req.session.destroy(() => {
-        res.clearCookie('connect.sid');
-        res.redirect('/login');
-    });
+
+app.use(
+    session({
+        secret: 'keyboard cat',
+        resave: false,
+        saveUninitialized: true
+    }),
+    passport.initialize(),
+    passport.session(),(req, res, next) => {
+        console.log(req.session);
+        console.log(req.user);
+        next();
+});
+
+app.get("/logout", (req, res) => {
+    req.logout();
+    res.redirect('/login');
 })
-//not work
-// app.get("/logout", (req, res) => {
-//     req.logout();
-//     res.redirect('/login');
-// })
 
 app.get("/login", (req, res) => res.send("Send credentials"));
 
-app.post("/login", [
-    session({
-        secret: 'keyboard cat',
-        resave: false,
-        saveUninitialized: true
-    }),
-    passport.initialize(),
-    passport.session(),
+app.get("/login-applicants", passport.authenticate('applicants_basic'), (req, res) => {
+    res.send("Enter applicant credentials")
+})
+
+
+app.post("/login",
     passport.authenticate('basic', { 
         successRedirect: '/',
         failureRedirect: '/login' 
-    })
-], )
+    }))
 
-app.get("/", [
-    session({
-        secret: 'keyboard cat',
-        resave: false,
-        saveUninitialized: true
-    }),
-    passport.initialize(),
-    passport.session(),
-    passport.authenticate('basic'),
-    (req, res, next) => {
-        console.log(req.session);
-        next();
-    }
-], (req, res) => res.send("Hello world"));
+app.get("/", 
+    // passport.authenticate('basic'), 
+    (req, res) => {
+        console.log(req.user);
+        if (req.isUnauthenticated()) return res.redirect("/login");
+    
+        res.send("Hello world");
+
+    });
 
 app.get("/collections", (req,res) => {
     
